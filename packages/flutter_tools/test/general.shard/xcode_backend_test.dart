@@ -23,8 +23,7 @@ void main() {
         ..createSync(recursive: true);
       final Directory flutterRoot = fileSystem.directory('/path/to/flutter')
         ..createSync(recursive: true);
-      final File pipe = fileSystem.file('/tmp/pipe')
-        ..createSync(recursive: true);
+      final File pipe = fileSystem.file('/tmp/pipe')..createSync(recursive: true);
       const String buildMode = 'Debug';
       final TestContext context = TestContext(
         <String>['build'],
@@ -55,6 +54,8 @@ void main() {
               '--ExtraGenSnapshotOptions=',
               '--DartDefines=',
               '--ExtraFrontEndOptions=',
+              '-dSrcRoot=',
+              '-dTargetDeviceOSVersion=',
               'debug_ios_bundle_flutter_assets',
             ],
           ),
@@ -62,22 +63,15 @@ void main() {
         fileSystem: fileSystem,
         scriptOutputStreamFile: pipe,
       );
-      expect(
-          () => context.run(),
-          throwsException,
-      );
-      expect(
-        context.stderr,
-        contains('ERROR: Unknown FLUTTER_BUILD_MODE: null.\n'),
-      );
+      expect(() => context.run(), throwsException);
+      expect(context.stderr, contains('ERROR: Unknown FLUTTER_BUILD_MODE: null.\n'));
     });
     test('calls flutter assemble', () {
       final Directory buildDir = fileSystem.directory('/path/to/builds')
         ..createSync(recursive: true);
       final Directory flutterRoot = fileSystem.directory('/path/to/flutter')
         ..createSync(recursive: true);
-      final File pipe = fileSystem.file('/tmp/pipe')
-        ..createSync(recursive: true);
+      final File pipe = fileSystem.file('/tmp/pipe')..createSync(recursive: true);
       const String buildMode = 'Debug';
       final TestContext context = TestContext(
         <String>['build'],
@@ -97,6 +91,7 @@ void main() {
               '-dTargetPlatform=ios',
               '-dTargetFile=lib/main.dart',
               '-dBuildMode=${buildMode.toLowerCase()}',
+              '-dConfiguration=$buildMode',
               '-dIosArchs=',
               '-dSdkRoot=',
               '-dSplitDebugInfo=',
@@ -108,6 +103,8 @@ void main() {
               '--ExtraGenSnapshotOptions=',
               '--DartDefines=',
               '--ExtraFrontEndOptions=',
+              '-dSrcRoot=',
+              '-dTargetDeviceOSVersion=',
               'debug_ios_bundle_flutter_assets',
             ],
           ),
@@ -119,10 +116,7 @@ void main() {
       // Ensure after line splitting, the exact string 'done' appears
       expect(streamedLines, contains('done'));
       expect(streamedLines, contains(' └─Compiling, linking and signing...'));
-      expect(
-        context.stdout,
-        contains('built and packaged successfully.'),
-      );
+      expect(context.stdout, contains('built and packaged successfully.'));
       expect(context.stderr, isEmpty);
     });
 
@@ -143,6 +137,8 @@ void main() {
       const String splitDebugInfo = '/path/to/split/debug/info';
       const String trackWidgetCreation = 'true';
       const String treeShake = 'true';
+      const String srcRoot = '/path/to/project';
+      const String iOSVersion = '18.3.1';
       final TestContext context = TestContext(
         <String>['build'],
         <String, String>{
@@ -150,7 +146,7 @@ void main() {
           'ARCHS': archs,
           'BUILT_PRODUCTS_DIR': buildDir.path,
           'CODE_SIGNING_REQUIRED': 'YES',
-          'CONFIGURATION': buildMode,
+          'CONFIGURATION': '$buildMode-strawberry',
           'DART_DEFINES': dartDefines,
           'DART_OBFUSCATION': dartObfuscation,
           'EXPANDED_CODE_SIGN_IDENTITY': expandedCodeSignIdentity,
@@ -164,6 +160,8 @@ void main() {
           'SPLIT_DEBUG_INFO': splitDebugInfo,
           'TRACK_WIDGET_CREATION': trackWidgetCreation,
           'TREE_SHAKE_ICONS': treeShake,
+          'SRCROOT': srcRoot,
+          'TARGET_DEVICE_OS_VERSION': iOSVersion,
         },
         commands: <FakeCommand>[
           FakeCommand(
@@ -176,6 +174,7 @@ void main() {
               '-dTargetFile=lib/main.dart',
               '-dBuildMode=${buildMode.toLowerCase()}',
               '-dFlavor=strawberry',
+              '-dConfiguration=$buildMode-strawberry',
               '-dIosArchs=$archs',
               '-dSdkRoot=$sdkRoot',
               '-dSplitDebugInfo=$splitDebugInfo',
@@ -187,6 +186,8 @@ void main() {
               '--ExtraGenSnapshotOptions=$extraGenSnapshotOptions',
               '--DartDefines=$dartDefines',
               '--ExtraFrontEndOptions=$extraFrontEndOptions',
+              '-dSrcRoot=$srcRoot',
+              '-dTargetDeviceOSVersion=$iOSVersion',
               '-dCodesignIdentity=$expandedCodeSignIdentity',
               'release_ios_bundle_flutter_assets',
             ],
@@ -194,10 +195,7 @@ void main() {
         ],
         fileSystem: fileSystem,
       )..run();
-      expect(
-        context.stdout,
-        contains('built and packaged successfully.'),
-      );
+      expect(context.stdout, contains('built and packaged successfully.'));
       expect(context.stderr, isEmpty);
     });
   });
@@ -219,7 +217,8 @@ void main() {
       expect(
         context.stdout,
         contains(
-            'Info.plist does not exist. Skipping _dartVmService._tcp NSBonjourServices insertion.'),
+          'Info.plist does not exist. Skipping _dartVmService._tcp NSBonjourServices insertion.',
+        ),
       );
     });
   });
@@ -230,8 +229,7 @@ void main() {
         ..createSync(recursive: true);
       final Directory flutterRoot = fileSystem.directory('/path/to/flutter')
         ..createSync(recursive: true);
-      final File pipe = fileSystem.file('/tmp/pipe')
-        ..createSync(recursive: true);
+      final File pipe = fileSystem.file('/tmp/pipe')..createSync(recursive: true);
       const String buildMode = 'Debug';
       final TestContext context = TestContext(
         <String>['prepare'],
@@ -263,6 +261,8 @@ void main() {
               '--DartDefines=',
               '--ExtraFrontEndOptions=',
               '-dPreBuildAction=PrepareFramework',
+              '-dSrcRoot=',
+              '-dTargetDeviceOSVersion=',
               'debug_unpack_ios',
             ],
           ),
@@ -270,22 +270,15 @@ void main() {
         fileSystem: fileSystem,
         scriptOutputStreamFile: pipe,
       );
-      expect(
-          () => context.run(),
-          throwsException,
-      );
-      expect(
-        context.stderr,
-        contains('ERROR: Unknown FLUTTER_BUILD_MODE: null.\n'),
-      );
+      expect(() => context.run(), throwsException);
+      expect(context.stderr, contains('ERROR: Unknown FLUTTER_BUILD_MODE: null.\n'));
     });
     test('calls flutter assemble', () {
       final Directory buildDir = fileSystem.directory('/path/to/builds')
         ..createSync(recursive: true);
       final Directory flutterRoot = fileSystem.directory('/path/to/flutter')
         ..createSync(recursive: true);
-      final File pipe = fileSystem.file('/tmp/pipe')
-        ..createSync(recursive: true);
+      final File pipe = fileSystem.file('/tmp/pipe')..createSync(recursive: true);
       const String buildMode = 'Debug';
       final TestContext context = TestContext(
         <String>['prepare'],
@@ -305,6 +298,7 @@ void main() {
               '-dTargetPlatform=ios',
               '-dTargetFile=lib/main.dart',
               '-dBuildMode=${buildMode.toLowerCase()}',
+              '-dConfiguration=$buildMode',
               '-dIosArchs=',
               '-dSdkRoot=',
               '-dSplitDebugInfo=',
@@ -316,6 +310,8 @@ void main() {
               '--ExtraGenSnapshotOptions=',
               '--DartDefines=',
               '--ExtraFrontEndOptions=',
+              '-dSrcRoot=',
+              '-dTargetDeviceOSVersion=',
               '-dPreBuildAction=PrepareFramework',
               'debug_unpack_ios',
             ],
@@ -344,6 +340,8 @@ void main() {
       const String splitDebugInfo = '/path/to/split/debug/info';
       const String trackWidgetCreation = 'true';
       const String treeShake = 'true';
+      const String srcRoot = '/path/to/project';
+      const String iOSVersion = '18.3.1';
       final TestContext context = TestContext(
         <String>['prepare'],
         <String, String>{
@@ -351,7 +349,6 @@ void main() {
           'ARCHS': archs,
           'BUILT_PRODUCTS_DIR': buildDir.path,
           'CODE_SIGNING_REQUIRED': 'YES',
-          'CONFIGURATION': buildMode,
           'DART_DEFINES': dartDefines,
           'DART_OBFUSCATION': dartObfuscation,
           'EXPANDED_CODE_SIGN_IDENTITY': expandedCodeSignIdentity,
@@ -361,10 +358,13 @@ void main() {
           'FRONTEND_SERVER_STARTER_PATH': frontendServerStarterPath,
           'INFOPLIST_PATH': 'Info.plist',
           'SDKROOT': sdkRoot,
+          'CONFIGURATION': '$buildMode-strawberry',
           'FLAVOR': 'strawberry',
           'SPLIT_DEBUG_INFO': splitDebugInfo,
           'TRACK_WIDGET_CREATION': trackWidgetCreation,
           'TREE_SHAKE_ICONS': treeShake,
+          'SRCROOT': srcRoot,
+          'TARGET_DEVICE_OS_VERSION': iOSVersion,
         },
         commands: <FakeCommand>[
           FakeCommand(
@@ -377,6 +377,7 @@ void main() {
               '-dTargetFile=lib/main.dart',
               '-dBuildMode=${buildMode.toLowerCase()}',
               '-dFlavor=strawberry',
+              '-dConfiguration=$buildMode-strawberry',
               '-dIosArchs=$archs',
               '-dSdkRoot=$sdkRoot',
               '-dSplitDebugInfo=$splitDebugInfo',
@@ -388,6 +389,8 @@ void main() {
               '--ExtraGenSnapshotOptions=$extraGenSnapshotOptions',
               '--DartDefines=$dartDefines',
               '--ExtraFrontEndOptions=$extraFrontEndOptions',
+              '-dSrcRoot=$srcRoot',
+              '-dTargetDeviceOSVersion=$iOSVersion',
               '-dPreBuildAction=PrepareFramework',
               '-dCodesignIdentity=$expandedCodeSignIdentity',
               'release_unpack_ios',
@@ -404,8 +407,7 @@ void main() {
         ..createSync(recursive: true);
       final Directory flutterRoot = fileSystem.directory('/path/to/flutter')
         ..createSync(recursive: true);
-      final File pipe = fileSystem.file('/tmp/pipe')
-        ..createSync(recursive: true);
+      final File pipe = fileSystem.file('/tmp/pipe')..createSync(recursive: true);
       const String buildMode = 'Debug';
       final TestContext context = TestContext(
         <String>['prepare'],
@@ -416,7 +418,7 @@ void main() {
           'INFOPLIST_PATH': 'Info.plist',
           'ARCHS': 'arm64 x86_64',
           'ONLY_ACTIVE_ARCH': 'YES',
-          'NATIVE_ARCH': 'arm64e'
+          'NATIVE_ARCH': 'arm64e',
         },
         commands: <FakeCommand>[
           FakeCommand(
@@ -428,6 +430,7 @@ void main() {
               '-dTargetPlatform=ios',
               '-dTargetFile=lib/main.dart',
               '-dBuildMode=${buildMode.toLowerCase()}',
+              '-dConfiguration=$buildMode',
               '-dIosArchs=arm64',
               '-dSdkRoot=',
               '-dSplitDebugInfo=',
@@ -439,6 +442,8 @@ void main() {
               '--ExtraGenSnapshotOptions=',
               '--DartDefines=',
               '--ExtraFrontEndOptions=',
+              '-dSrcRoot=',
+              '-dTargetDeviceOSVersion=',
               '-dPreBuildAction=PrepareFramework',
               'debug_unpack_ios',
             ],
@@ -455,8 +460,7 @@ void main() {
         ..createSync(recursive: true);
       final Directory flutterRoot = fileSystem.directory('/path/to/flutter')
         ..createSync(recursive: true);
-      final File pipe = fileSystem.file('/tmp/pipe')
-        ..createSync(recursive: true);
+      final File pipe = fileSystem.file('/tmp/pipe')..createSync(recursive: true);
       const String buildMode = 'Debug';
       final TestContext context = TestContext(
         <String>['prepare'],
@@ -479,6 +483,7 @@ void main() {
               '-dTargetPlatform=ios',
               '-dTargetFile=lib/main.dart',
               '-dBuildMode=${buildMode.toLowerCase()}',
+              '-dConfiguration=$buildMode',
               '-dIosArchs=arm64',
               '-dSdkRoot=',
               '-dSplitDebugInfo=',
@@ -490,6 +495,8 @@ void main() {
               '--ExtraGenSnapshotOptions=',
               '--DartDefines=',
               '--ExtraFrontEndOptions=',
+              '-dSrcRoot=',
+              '-dTargetDeviceOSVersion=',
               '-dPreBuildAction=PrepareFramework',
               'debug_unpack_ios',
             ],
@@ -506,8 +513,7 @@ void main() {
         ..createSync(recursive: true);
       final Directory flutterRoot = fileSystem.directory('/path/to/flutter')
         ..createSync(recursive: true);
-      final File pipe = fileSystem.file('/tmp/pipe')
-        ..createSync(recursive: true);
+      final File pipe = fileSystem.file('/tmp/pipe')..createSync(recursive: true);
       const String buildMode = 'Debug';
       final TestContext context = TestContext(
         <String>['prepare'],
@@ -517,7 +523,7 @@ void main() {
           'FLUTTER_ROOT': flutterRoot.path,
           'INFOPLIST_PATH': 'Info.plist',
           'ARCHS': 'arm64 x86_64',
-          'NATIVE_ARCH': 'arm64e'
+          'NATIVE_ARCH': 'arm64e',
         },
         commands: <FakeCommand>[
           FakeCommand(
@@ -529,6 +535,7 @@ void main() {
               '-dTargetPlatform=ios',
               '-dTargetFile=lib/main.dart',
               '-dBuildMode=${buildMode.toLowerCase()}',
+              '-dConfiguration=$buildMode',
               '-dIosArchs=arm64 x86_64',
               '-dSdkRoot=',
               '-dSplitDebugInfo=',
@@ -540,6 +547,8 @@ void main() {
               '--ExtraGenSnapshotOptions=',
               '--DartDefines=',
               '--ExtraFrontEndOptions=',
+              '-dSrcRoot=',
+              '-dTargetDeviceOSVersion=',
               '-dPreBuildAction=PrepareFramework',
               'debug_unpack_ios',
             ],
@@ -560,8 +569,12 @@ class TestContext extends Context {
     required this.fileSystem,
     required List<FakeCommand> commands,
     File? scriptOutputStreamFile,
-  })  : processManager = FakeProcessManager.list(commands),
-        super(arguments: arguments, environment: environment, scriptOutputStreamFile: scriptOutputStreamFile);
+  }) : processManager = FakeProcessManager.list(commands),
+       super(
+         arguments: arguments,
+         environment: environment,
+         scriptOutputStreamFile: scriptOutputStreamFile,
+       );
 
   final FileSystem fileSystem;
   final FakeProcessManager processManager;

@@ -16,10 +16,7 @@ class DecoratedSliverClipExampleApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'DecoratedSliver Clip Example',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
+      theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple)),
       home: const DecoratedSliverClipExample(),
     );
   }
@@ -69,9 +66,7 @@ class _DecoratedSliverClipExampleState extends State<DecoratedSliverClipExample>
               ),
             ],
           ),
-          const SizedBox(
-            height: 20.0,
-          ),
+          const SizedBox(height: 20.0),
           Stack(
             children: <Widget>[
               Padding(
@@ -100,10 +95,7 @@ class _DecoratedSliverClipExampleState extends State<DecoratedSliverClipExample>
 }
 
 class ResizableCustomScrollView extends StatelessWidget {
-  const ResizableCustomScrollView({
-    super.key,
-    required this.isClipped,
-  });
+  const ResizableCustomScrollView({super.key, required this.isClipped});
 
   final bool isClipped;
 
@@ -116,40 +108,28 @@ class ResizableCustomScrollView extends StatelessWidget {
         DecoratedSliver(
           decoration: const ShapeDecoration(
             color: Color(0xFF2C2C2C),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(
-                Radius.circular(6),
-              ),
-            ),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(6))),
             shadows: <BoxShadow>[
-              BoxShadow(
-                color: Colors.cyan,
-                offset: Offset(3, 3),
-                blurRadius: 24,
-              ),
+              BoxShadow(color: Colors.cyan, offset: Offset(3, 3), blurRadius: 24),
             ],
           ),
           sliver: SliverList.builder(
             itemCount: 5,
-            itemBuilder: (_, int index) => Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Row(
-                children: <Widget>[
-                  const Icon(
-                    Icons.add_box,
-                    color: Color(0xFFA8A8A8),
-                  ),
-                  Flexible(
-                    child: Text(
-                      'Item $index',
-                      style: const TextStyle(
-                        color: Color(0xFFA8A8A8),
+            itemBuilder:
+                (_, int index) => Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Row(
+                    children: <Widget>[
+                      const Icon(Icons.add_box, color: Color(0xFFA8A8A8)),
+                      Flexible(
+                        child: Text(
+                          'Item $index',
+                          style: const TextStyle(color: Color(0xFFA8A8A8)),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
-                ],
-              ),
-            ),
+                ),
           ),
         ),
       ],
