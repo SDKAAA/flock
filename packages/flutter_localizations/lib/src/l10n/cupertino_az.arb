@@ -28,6 +28,12 @@
   "lookUpButtonLabel": "Axtarın",
   "searchWebButtonLabel": "Vebdə axtarın",
   "shareButtonLabel": "Paylaşın...",
-  "cancelButtonLabel": "Cancel",
-  "backButtonLabel": "Back"
+  "cancelButtonLabel": "Ləğv edin",
+  "backButtonLabel": "Geri",
+  "expansionTileExpandedHint": "yığcamlaşdırmaq üçün iki dəfə toxunun",
+  "expansionTileCollapsedHint": "genişləndirmək üçün iki dəfə toxunun",
+  "expansionTileExpandedTapHint": "Yığcamlaşdırın",
+  "expansionTileCollapsedTapHint": "Daha çox detallar üçün genişləndirin",
+  "expandedHint": "Yığcamlaşdırıldı",
+  "collapsedHint": "Genişləndirildi"
 }

@@ -2,14 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import 'package:code_assets/code_assets.dart';
+import 'package:hooks/hooks.dart';
 import 'package:logging/logging.dart';
-import 'package:native_assets_cli/code_assets.dart';
-import 'package:native_assets_cli/code_assets_builder.dart';
 import 'package:native_toolchain_c/native_toolchain_c.dart';
 
 void main(List<String> args) async {
   await build(args, (BuildInput input, BuildOutputBuilder output) async {
-    if (!input.config.buildAssetTypes.contains(CodeAsset.type)) {
+    if (!input.config.buildCodeAssets) {
       return;
     }
 
@@ -26,27 +26,26 @@ void main(List<String> args) async {
       assetName = '${input.packageName}_bindings_generated.dart';
     }
     final String packageName = input.packageName;
-    final CBuilder cbuilder = CBuilder.library(
+    final cbuilder = CBuilder.library(
       name: packageName,
       assetName: assetName,
       sources: <String>['src/$packageName.c'],
       dartBuildFiles: <String>['hook/build.dart'],
     );
-    final BuildOutputBuilder outputCatcher = BuildOutputBuilder();
+    final outputCatcher = BuildOutputBuilder();
     await cbuilder.run(
       input: input,
       output: outputCatcher,
-      logger:
-          Logger('')
-            ..level = Level.ALL
-            ..onRecord.listen((LogRecord record) => print(record.message)),
+      logger: Logger('')
+        ..level = Level.ALL
+        ..onRecord.listen((LogRecord record) => print(record.message)),
     );
-    final BuildOutput caughtOutput = BuildOutput(outputCatcher.json);
+    final caughtOutput = BuildOutput(outputCatcher.json);
     output.addDependencies(caughtOutput.dependencies);
     // Send the asset to hook/link.dart or immediately for bundling.
     output.assets.code.add(
       caughtOutput.assets.code.single,
-      linkInPackage: input.config.linkingEnabled ? 'link_hook' : null,
+      routing: input.config.linkingEnabled ? const ToLinkHook('link_hook') : const ToAppBundle(),
     );
   });
 }

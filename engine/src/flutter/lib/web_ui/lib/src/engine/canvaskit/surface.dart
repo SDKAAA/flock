@@ -7,6 +7,8 @@ import 'dart:js_interop';
 import 'package:ui/ui.dart' as ui;
 
 import '../browser_detection.dart';
+import '../compositing/rasterizer.dart';
+import '../compositing/render_canvas.dart';
 import '../configuration.dart';
 import '../display.dart';
 import '../dom.dart';
@@ -14,9 +16,6 @@ import '../platform_dispatcher.dart';
 import '../util.dart';
 import 'canvas.dart';
 import 'canvaskit_api.dart';
-import 'picture.dart';
-import 'rasterizer.dart';
-import 'render_canvas.dart';
 import 'util.dart';
 
 // Only supported in profile/release mode. Allows Flutter to use MSAA but
@@ -36,7 +35,7 @@ class Surface extends DisplayCanvas {
 
   /// Returns the underlying CanvasKit Surface. Should only be used in tests.
   CkSurface? debugGetCkSurface() {
-    bool assertsEnabled = false;
+    var assertsEnabled = false;
     assert(() {
       assertsEnabled = true;
       return true;
@@ -90,7 +89,7 @@ class Surface extends DisplayCanvas {
 
   /// Returns the underlying OffscreenCanvas. Should only be used in tests.
   DomOffscreenCanvas? debugGetOffscreenCanvas() {
-    bool assertsEnabled = false;
+    var assertsEnabled = false;
     assert(() {
       assertsEnabled = true;
       return true;
@@ -103,7 +102,7 @@ class Surface extends DisplayCanvas {
 
   /// The <canvas> backing this Surface in the case that OffscreenCanvas isn't
   /// supported.
-  DomCanvasElement? _canvasElement;
+  DomHTMLCanvasElement? _canvasElement;
 
   /// Note, if this getter is called, then this Surface is being used as an
   /// overlay and must be backed by an onscreen <canvas> element.
@@ -140,11 +139,11 @@ class Surface extends DisplayCanvas {
   Future<void> rasterizeToCanvas(
     BitmapSize bitmapSize,
     RenderCanvas canvas,
-    List<CkPicture> pictures,
+    ui.Picture picture,
   ) async {
     final CkCanvas skCanvas = getCanvas();
     skCanvas.clear(const ui.Color(0x00000000));
-    pictures.forEach(skCanvas.drawPicture);
+    skCanvas.drawPicture(picture);
     flush();
 
     if (browserSupportsCreateImageBitmap) {
@@ -153,7 +152,7 @@ class Surface extends DisplayCanvas {
       if (useOffscreenCanvas) {
         bitmap = _offscreenCanvas!.transferToImageBitmap();
       } else {
-        bitmapSource = _canvasElement! as JSObject;
+        bitmapSource = _canvasElement!;
         bitmap = await createImageBitmap(bitmapSource, (
           x: 0,
           y: _pixelHeight - bitmapSize.height,
@@ -291,7 +290,7 @@ class Surface extends DisplayCanvas {
     return _surface = _createNewSurface(size);
   }
 
-  JSVoid _contextRestoredListener(DomEvent event) {
+  void _contextRestoredListener(DomEvent event) {
     assert(
       _contextLost,
       'Received "webglcontextrestored" event but never received '
@@ -304,7 +303,7 @@ class Surface extends DisplayCanvas {
     event.preventDefault();
   }
 
-  JSVoid _contextLostListener(DomEvent event) {
+  void _contextLostListener(DomEvent event) {
     assert(
       event.target == _offscreenCanvas || event.target == _canvasElement,
       'Received a context lost event for a disposed canvas',
@@ -323,9 +322,13 @@ class Surface extends DisplayCanvas {
       _offscreenCanvas!.removeEventListener(
         'webglcontextrestored',
         _cachedContextRestoredListener,
-        false,
+        false.toJS,
       );
-      _offscreenCanvas!.removeEventListener('webglcontextlost', _cachedContextLostListener, false);
+      _offscreenCanvas!.removeEventListener(
+        'webglcontextlost',
+        _cachedContextLostListener,
+        false.toJS,
+      );
       _offscreenCanvas = null;
       _cachedContextRestoredListener = null;
       _cachedContextLostListener = null;
@@ -333,9 +336,13 @@ class Surface extends DisplayCanvas {
       _canvasElement!.removeEventListener(
         'webglcontextrestored',
         _cachedContextRestoredListener,
-        false,
+        false.toJS,
       );
-      _canvasElement!.removeEventListener('webglcontextlost', _cachedContextLostListener, false);
+      _canvasElement!.removeEventListener(
+        'webglcontextlost',
+        _cachedContextLostListener,
+        false.toJS,
+      );
       _canvasElement!.remove();
       _canvasElement = null;
       _cachedContextRestoredListener = null;
@@ -356,7 +363,7 @@ class Surface extends DisplayCanvas {
       _offscreenCanvas = offscreenCanvas;
       _canvasElement = null;
     } else {
-      final DomCanvasElement canvas = createDomCanvasElement(
+      final DomHTMLCanvasElement canvas = createDomCanvasElement(
         width: _pixelWidth,
         height: _pixelHeight,
       );
@@ -379,14 +386,14 @@ class Surface extends DisplayCanvas {
     // See also: https://www.khronos.org/webgl/wiki/HandlingContextLost
     _cachedContextRestoredListener = createDomEventListener(_contextRestoredListener);
     _cachedContextLostListener = createDomEventListener(_contextLostListener);
-    htmlCanvas.addEventListener('webglcontextlost', _cachedContextLostListener, false);
-    htmlCanvas.addEventListener('webglcontextrestored', _cachedContextRestoredListener, false);
+    htmlCanvas.addEventListener('webglcontextlost', _cachedContextLostListener, false.toJS);
+    htmlCanvas.addEventListener('webglcontextrestored', _cachedContextRestoredListener, false.toJS);
     _forceNewContext = false;
     _contextLost = false;
 
     if (webGLVersion != -1 && !configuration.canvasKitForceCpuOnly) {
-      int glContext = 0;
-      final SkWebGLContextOptions options = SkWebGLContextOptions(
+      var glContext = 0;
+      final options = SkWebGLContextOptions(
         // Default to no anti-aliasing. Paint commands can be explicitly
         // anti-aliased by setting their `Paint` object's `antialias` property.
         antialias: _kUsingMSAA ? 1 : 0,
@@ -490,11 +497,15 @@ class Surface extends DisplayCanvas {
 
   @override
   void dispose() {
-    _offscreenCanvas?.removeEventListener('webglcontextlost', _cachedContextLostListener, false);
+    _offscreenCanvas?.removeEventListener(
+      'webglcontextlost',
+      _cachedContextLostListener,
+      false.toJS,
+    );
     _offscreenCanvas?.removeEventListener(
       'webglcontextrestored',
       _cachedContextRestoredListener,
-      false,
+      false.toJS,
     );
     _cachedContextLostListener = null;
     _cachedContextRestoredListener = null;
@@ -512,7 +523,7 @@ class CkSurface {
 
   CkCanvas getCanvas() {
     assert(!_isDisposed, 'Attempting to use the canvas of a disposed surface');
-    return CkCanvas(surface.getCanvas());
+    return CkCanvas.fromSkCanvas(surface.getCanvas());
   }
 
   /// The underlying CanvasKit surface object.

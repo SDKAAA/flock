@@ -133,8 +133,7 @@ namespace flutter {
   V(DrawAtlasCulled)                 \
                                      \
   V(DrawDisplayList)                 \
-  V(DrawTextBlob)                    \
-  V(DrawTextFrame)                   \
+  V(DrawText)                        \
                                      \
   V(DrawShadow)                      \
   V(DrawShadowTransparentOccluder)
@@ -244,9 +243,6 @@ class SaveLayerOptions {
   bool operator==(const SaveLayerOptions& other) const {
     return flags_ == other.flags_;
   }
-  bool operator!=(const SaveLayerOptions& other) const {
-    return flags_ != other.flags_;
-  }
 
  private:
   union {
@@ -274,12 +270,6 @@ class DisplayList : public SkRefCnt {
   ~DisplayList();
 
   void Dispatch(DlOpReceiver& ctx) const;
-  void Dispatch(DlOpReceiver& ctx, const SkRect& cull_rect) const {
-    Dispatch(ctx, ToDlRect(cull_rect));
-  }
-  void Dispatch(DlOpReceiver& ctx, const SkIRect& cull_rect) const {
-    Dispatch(ctx, ToDlIRect(cull_rect));
-  }
   void Dispatch(DlOpReceiver& ctx, const DlRect& cull_rect) const;
   void Dispatch(DlOpReceiver& ctx, const DlIRect& cull_rect) const;
 
@@ -299,7 +289,6 @@ class DisplayList : public SkRefCnt {
 
   uint32_t unique_id() const { return unique_id_; }
 
-  const SkRect& bounds() const { return ToSkRect(bounds_); }
   const DlRect& GetBounds() const { return bounds_; }
 
   bool has_rtree() const { return rtree_ != nullptr; }

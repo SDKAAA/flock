@@ -11,7 +11,8 @@
 #include "flutter/shell/platform/linux/fl_display_monitor.h"
 #include "flutter/shell/platform/linux/fl_keyboard_manager.h"
 #include "flutter/shell/platform/linux/fl_mouse_cursor_handler.h"
-#include "flutter/shell/platform/linux/fl_renderer.h"
+#include "flutter/shell/platform/linux/fl_opengl_manager.h"
+#include "flutter/shell/platform/linux/fl_renderable.h"
 #include "flutter/shell/platform/linux/fl_task_runner.h"
 #include "flutter/shell/platform/linux/fl_text_input_handler.h"
 #include "flutter/shell/platform/linux/fl_windowing_handler.h"
@@ -62,26 +63,24 @@ FlEngine* fl_engine_new_with_binary_messenger(
     FlBinaryMessenger* binary_messenger);
 
 /**
- * fl_engine_new_with_renderer:
- * @project: an #FlDartProject.
- * @renderer: an #FlRenderer.
- *
- * Creates new Flutter engine.
- *
- * Returns: a new #FlEngine.
- */
-FlEngine* fl_engine_new_with_renderer(FlDartProject* project,
-                                      FlRenderer* renderer);
-
-/**
- * fl_engine_get_renderer:
+ * fl_engine_get_renderer_type:
  * @engine: an #FlEngine.
  *
- * Gets the renderer used by this engine.
+ * Gets the rendering type used by this engine.
  *
- * Returns: an #FlRenderer.
+ * Returns: type of rendering used.
  */
-FlRenderer* fl_engine_get_renderer(FlEngine* engine);
+FlutterRendererType fl_engine_get_renderer_type(FlEngine* engine);
+
+/**
+ * fl_engine_get_opengl_manager:
+ * @engine: an #FlEngine.
+ *
+ * Gets the OpenGL manager used by this engine.
+ *
+ * Returns: an #FlOpenGLManager.
+ */
+FlOpenGLManager* fl_engine_get_opengl_manager(FlEngine* engine);
 
 /**
  * fl_engine_get_display_monitor:
@@ -97,7 +96,9 @@ FlDisplayMonitor* fl_engine_get_display_monitor(FlEngine* engine);
  * fl_engine_start:
  * @engine: an #FlEngine.
  * @error: (allow-none): #GError location to store the error occurring, or %NULL
- * to ignore.
+ * to ignore. If `error` is not %NULL, `*error` must be initialized (typically
+ * %NULL, but an error from a previous call using GLib error handling is
+ * explicitly valid).
  *
  * Starts the Flutter engine.
  *
@@ -128,8 +129,18 @@ void fl_engine_notify_display_update(FlEngine* engine,
                                      size_t displays_length);
 
 /**
+ * fl_engine_set_implicit_view:
+ * @engine: an #FlEngine.
+ * @renderable: the object that will render the implicit view.
+ *
+ * Sets the object to render the implicit view.
+ */
+void fl_engine_set_implicit_view(FlEngine* engine, FlRenderable* renderable);
+
+/**
  * fl_engine_add_view:
  * @engine: an #FlEngine.
+ * @renderable: the object that will render this view.
  * @width: width of view in pixels.
  * @height: height of view in pixels.
  * @pixel_ratio: scale factor for view.
@@ -144,6 +155,7 @@ void fl_engine_notify_display_update(FlEngine* engine,
  * Returns: the ID for the view.
  */
 FlutterViewId fl_engine_add_view(FlEngine* engine,
+                                 FlRenderable* renderable,
                                  size_t width,
                                  size_t height,
                                  double pixel_ratio,
@@ -156,7 +168,9 @@ FlutterViewId fl_engine_add_view(FlEngine* engine,
  * @engine: an #FlEngine.
  * @result: a #GAsyncResult.
  * @error: (allow-none): #GError location to store the error occurring, or %NULL
- * to ignore.
+ * to ignore. If `error` is not %NULL, `*error` must be initialized (typically
+ * %NULL, but an error from a previous call using GLib error handling is
+ * explicitly valid).
  *
  * Completes request started with fl_engine_add_view().
  *
@@ -165,6 +179,18 @@ FlutterViewId fl_engine_add_view(FlEngine* engine,
 gboolean fl_engine_add_view_finish(FlEngine* engine,
                                    GAsyncResult* result,
                                    GError** error);
+
+/**
+ * fl_engine_get_renderable:
+ * @engine: an #FlEngine.
+ * @view_id: ID to check.
+ *
+ * Gets the renderable associated with the give view ID.
+ *
+ * Returns: (transfer full): a reference to an #FlRenderable or %NULL if none
+ * for this ID.
+ */
+FlRenderable* fl_engine_get_renderable(FlEngine* engine, FlutterViewId view_id);
 
 /**
  * fl_engine_remove_view:
@@ -188,7 +214,9 @@ void fl_engine_remove_view(FlEngine* engine,
  * @engine: an #FlEngine.
  * @result: a #GAsyncResult.
  * @error: (allow-none): #GError location to store the error occurring, or %NULL
- * to ignore.
+ * to ignore. If `error` is not %NULL, `*error` must be initialized (typically
+ * %NULL, but an error from a previous call using GLib error handling is
+ * explicitly valid).
  *
  * Completes request started with fl_engine_remove_view().
  *
@@ -400,7 +428,9 @@ void fl_engine_send_key_event(FlEngine* engine,
  * @result: a #GAsyncResult.
  * @handled: location to write if this event was handled by the engine.
  * @error: (allow-none): #GError location to store the error occurring, or %NULL
- * to ignore.
+ * to ignore. If `error` is not %NULL, `*error` must be initialized (typically
+ * %NULL, but an error from a previous call using GLib error handling is
+ * explicitly valid).
  *
  * Completes request started with fl_engine_send_key_event().
  *
@@ -431,7 +461,9 @@ void fl_engine_dispatch_semantics_action(FlEngine* engine,
  * @handle: handle that was provided in #FlEnginePlatformMessageHandler.
  * @response: (allow-none): response to send or %NULL for an empty response.
  * @error: (allow-none): #GError location to store the error occurring, or %NULL
- * to ignore.
+ * to ignore. If `error` is not %NULL, `*error` must be initialized (typically
+ * %NULL, but an error from a previous call using GLib error handling is
+ * explicitly valid).
  *
  * Responds to a platform message.
  *
@@ -467,7 +499,9 @@ void fl_engine_send_platform_message(FlEngine* engine,
  * @engine: an #FlEngine.
  * @result: a #GAsyncResult.
  * @error: (allow-none): #GError location to store the error occurring, or %NULL
- * to ignore.
+ * to ignore. If `error` is not %NULL, `*error` must be initialized (typically
+ * %NULL, but an error from a previous call using GLib error handling is
+ * explicitly valid).
  *
  * Completes request started with fl_engine_send_platform_message().
  *

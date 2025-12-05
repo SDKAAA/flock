@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import 'dart:js_interop';
+
 import '../dom.dart';
 
 /// Controls the capitalization of the text.
@@ -35,14 +37,13 @@ class TextCapitalizationConfig {
     : textCapitalization = TextCapitalization.none;
 
   const TextCapitalizationConfig.fromInputConfiguration(String inputConfiguration)
-    : textCapitalization =
-          inputConfiguration == 'TextCapitalization.words'
-              ? TextCapitalization.words
-              : inputConfiguration == 'TextCapitalization.characters'
-              ? TextCapitalization.characters
-              : inputConfiguration == 'TextCapitalization.sentences'
-              ? TextCapitalization.sentences
-              : TextCapitalization.none;
+    : textCapitalization = inputConfiguration == 'TextCapitalization.words'
+          ? TextCapitalization.words
+          : inputConfiguration == 'TextCapitalization.characters'
+          ? TextCapitalization.characters
+          : inputConfiguration == 'TextCapitalization.sentences'
+          ? TextCapitalization.sentences
+          : TextCapitalization.none;
 
   final TextCapitalization textCapitalization;
 
@@ -57,7 +58,7 @@ class TextCapitalizationConfig {
   /// See: https://developers.google.com/web/updates/2015/04/autocapitalize
   /// https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/autocapitalize
   void setAutocapitalizeAttribute(DomHTMLElement domElement) {
-    String autocapitalize = '';
+    var autocapitalize = '';
     switch (textCapitalization) {
       case TextCapitalization.words:
         autocapitalize = 'words';
@@ -68,11 +69,11 @@ class TextCapitalizationConfig {
       case TextCapitalization.none:
         autocapitalize = 'off';
     }
-    if (domInstanceOfString(domElement, 'HTMLInputElement')) {
-      final DomHTMLInputElement element = domElement as DomHTMLInputElement;
+    if (domElement.isA<DomHTMLInputElement>()) {
+      final element = domElement as DomHTMLInputElement;
       element.setAttribute('autocapitalize', autocapitalize);
-    } else if (domInstanceOfString(domElement, 'HTMLTextAreaElement')) {
-      final DomHTMLTextAreaElement element = domElement as DomHTMLTextAreaElement;
+    } else if (domElement.isA<DomHTMLTextAreaElement>()) {
+      final element = domElement as DomHTMLTextAreaElement;
       element.setAttribute('autocapitalize', autocapitalize);
     }
   }

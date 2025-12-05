@@ -38,6 +38,12 @@
   "searchWebButtonLabel": "Искать в интернете",
   "shareButtonLabel": "Поделиться",
   "clearButtonLabel": "Очистить",
-  "cancelButtonLabel": "Cancel",
-  "backButtonLabel": "Back"
+  "cancelButtonLabel": "Отмена",
+  "backButtonLabel": "Назад",
+  "expansionTileExpandedHint": "нажмите дважды, чтобы свернуть",
+  "expansionTileCollapsedHint": "нажмите дважды, чтобы развернуть",
+  "expansionTileExpandedTapHint": "Свернуть",
+  "expansionTileCollapsedTapHint": "Развернуть дополнительные сведения",
+  "expandedHint": "Свернуто",
+  "collapsedHint": "Развернуто"
 }

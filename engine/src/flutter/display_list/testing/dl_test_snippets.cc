@@ -5,7 +5,12 @@
 #include "flutter/display_list/testing/dl_test_snippets.h"
 #include "flutter/display_list/dl_builder.h"
 #include "flutter/display_list/dl_op_receiver.h"
+#include "flutter/display_list/dl_text_skia.h"
 #include "flutter/display_list/skia/dl_sk_canvas.h"
+#if IMPELLER_SUPPORTS_RENDERING
+#include "flutter/impeller/display_list/dl_text_impeller.h"  // nogncheck
+#include "flutter/impeller/typographer/backends/skia/text_frame_skia.h"  // nogncheck
+#endif
 #include "third_party/skia/include/core/SkFontMgr.h"
 #include "third_party/skia/include/core/SkTypeface.h"
 #include "txt/platform.h"
@@ -576,27 +581,27 @@ std::vector<DisplayListInvocationGroup> CreateAllClipOps() {
        }},
       {"ClipPath",
        {
-           {1, 24, 0,
+           {1, 32, 0,
             [](DlOpReceiver& r) {
               r.clipPath(kTestPath1, DlClipOp::kIntersect, true);
             }},
-           {1, 24, 0,
+           {1, 32, 0,
             [](DlOpReceiver& r) {
               r.clipPath(kTestPath2, DlClipOp::kIntersect, true);
             }},
-           {1, 24, 0,
+           {1, 32, 0,
             [](DlOpReceiver& r) {
               r.clipPath(kTestPath3, DlClipOp::kIntersect, true);
             }},
-           {1, 24, 0,
+           {1, 32, 0,
             [](DlOpReceiver& r) {
               r.clipPath(kTestPath1, DlClipOp::kIntersect, false);
             }},
-           {1, 24, 0,
+           {1, 32, 0,
             [](DlOpReceiver& r) {
               r.clipPath(kTestPath1, DlClipOp::kDifference, true);
             }},
-           {1, 24, 0,
+           {1, 32, 0,
             [](DlOpReceiver& r) {
               r.clipPath(kTestPath1, DlClipOp::kDifference, false);
             }},
@@ -642,26 +647,11 @@ std::vector<DisplayListInvocationGroup> CreateAllRenderingOps() {
        }},
       {"DrawLine",
        {
-           {1, 24, 1,
-            [](DlOpReceiver& r) {
-              r.drawLine({0, 0}, {10, 10});
-            }},
-           {1, 24, 1,
-            [](DlOpReceiver& r) {
-              r.drawLine({1, 0}, {10, 10});
-            }},
-           {1, 24, 1,
-            [](DlOpReceiver& r) {
-              r.drawLine({0, 1}, {10, 10});
-            }},
-           {1, 24, 1,
-            [](DlOpReceiver& r) {
-              r.drawLine({0, 0}, {20, 10});
-            }},
-           {1, 24, 1,
-            [](DlOpReceiver& r) {
-              r.drawLine({0, 0}, {10, 20});
-            }},
+           {1, 24, 1, [](DlOpReceiver& r) { r.drawLine({0, 0}, {10, 10}); }},
+           {1, 24, 1, [](DlOpReceiver& r) { r.drawLine({1, 0}, {10, 10}); }},
+           {1, 24, 1, [](DlOpReceiver& r) { r.drawLine({0, 1}, {10, 10}); }},
+           {1, 24, 1, [](DlOpReceiver& r) { r.drawLine({0, 0}, {20, 10}); }},
+           {1, 24, 1, [](DlOpReceiver& r) { r.drawLine({0, 0}, {10, 20}); }},
        }},
       {"DrawDashedLine",
        {
@@ -734,18 +724,9 @@ std::vector<DisplayListInvocationGroup> CreateAllRenderingOps() {
        }},
       {"DrawCircle",
        {
-           {1, 16, 1,
-            [](DlOpReceiver& r) {
-              r.drawCircle({0, 0}, 10);
-            }},
-           {1, 16, 1,
-            [](DlOpReceiver& r) {
-              r.drawCircle({0, 5}, 10);
-            }},
-           {1, 16, 1,
-            [](DlOpReceiver& r) {
-              r.drawCircle({0, 0}, 20);
-            }},
+           {1, 16, 1, [](DlOpReceiver& r) { r.drawCircle({0, 0}, 10); }},
+           {1, 16, 1, [](DlOpReceiver& r) { r.drawCircle({0, 5}, 10); }},
+           {1, 16, 1, [](DlOpReceiver& r) { r.drawCircle({0, 0}, 20); }},
        }},
       {"DrawRRect",
        {
@@ -753,17 +734,9 @@ std::vector<DisplayListInvocationGroup> CreateAllRenderingOps() {
            {1, 56, 1,
             [](DlOpReceiver& r) { r.drawRoundRect(kTestRRect.Shift(5, 5)); }},
        }},
-      {"DrawRSuperellipse",
-       {
-           {1, 56, 1,
-            [](DlOpReceiver& r) {
-              r.drawRoundSuperellipse(kTestRSuperellipse);
-            }},
-           {1, 56, 1,
-            [](DlOpReceiver& r) {
-              r.drawRoundSuperellipse(kTestRSuperellipse.Shift(5, 5));
-            }},
-       }},
+      // DrawRSuperellipse is omitted because the testing framework doesn't
+      // support flexible size.
+      // TODO(dkwingsmt): https://github.com/flutter/flutter/issues/166284
       {"DrawDRRect",
        {
            {1, 104, 1,
@@ -778,13 +751,13 @@ std::vector<DisplayListInvocationGroup> CreateAllRenderingOps() {
        }},
       {"DrawPath",
        {
-           {1, 24, 1, [](DlOpReceiver& r) { r.drawPath(kTestPath1); }},
-           {1, 24, 1, [](DlOpReceiver& r) { r.drawPath(kTestPath2); }},
-           {1, 24, 1, [](DlOpReceiver& r) { r.drawPath(kTestPath3); }},
+           {1, 32, 1, [](DlOpReceiver& r) { r.drawPath(kTestPath1); }},
+           {1, 32, 1, [](DlOpReceiver& r) { r.drawPath(kTestPath2); }},
+           {1, 32, 1, [](DlOpReceiver& r) { r.drawPath(kTestPath3); }},
            // oval, rect and rrect paths are left as drawPath
-           {1, 24, 1, [](DlOpReceiver& r) { r.drawPath(kTestPathRect); }},
-           {1, 24, 1, [](DlOpReceiver& r) { r.drawPath(kTestPathOval); }},
-           {1, 24, 1, [](DlOpReceiver& r) { r.drawPath(kTestPathRRect); }},
+           {1, 32, 1, [](DlOpReceiver& r) { r.drawPath(kTestPathRect); }},
+           {1, 32, 1, [](DlOpReceiver& r) { r.drawPath(kTestPathOval); }},
+           {1, 32, 1, [](DlOpReceiver& r) { r.drawPath(kTestPathRRect); }},
        }},
       {"DrawArc",
        {
@@ -1116,48 +1089,66 @@ std::vector<DisplayListInvocationGroup> CreateAllRenderingOps() {
             },
             1u},
        }},
-      {"DrawTextBlob",
+      {"DrawText",
        {
-           {1, 24, 1,
+           {1, 32, 1,
             [](DlOpReceiver& r) {
-              r.drawTextBlob(GetTestTextBlob(1), 10, 10);
+              r.drawText(DlTextSkia::Make(GetTestTextBlob(1)), 10, 10);
             }},
-           {1, 24, 1,
+           {1, 32, 1,
             [](DlOpReceiver& r) {
-              r.drawTextBlob(GetTestTextBlob(1), 20, 10);
+              r.drawText(DlTextSkia::Make(GetTestTextBlob(1)), 20, 10);
             }},
-           {1, 24, 1,
+           {1, 32, 1,
             [](DlOpReceiver& r) {
-              r.drawTextBlob(GetTestTextBlob(1), 10, 20);
+              r.drawText(DlTextSkia::Make(GetTestTextBlob(1)), 10, 20);
             }},
-           {1, 24, 1,
+           {1, 32, 1,
             [](DlOpReceiver& r) {
-              r.drawTextBlob(GetTestTextBlob(2), 10, 10);
+              r.drawText(DlTextSkia::Make(GetTestTextBlob(2)), 10, 10);
             }},
+#if IMPELLER_SUPPORTS_RENDERING
+           {1, 32, 1,
+            [](DlOpReceiver& r) {
+              r.drawText(DlTextImpeller::Make(GetTestTextFrame(1)), 10, 10);
+            }},
+           {1, 32, 1,
+            [](DlOpReceiver& r) {
+              r.drawText(DlTextImpeller::Make(GetTestTextFrame(1)), 20, 10);
+            }},
+           {1, 32, 1,
+            [](DlOpReceiver& r) {
+              r.drawText(DlTextImpeller::Make(GetTestTextFrame(1)), 10, 20);
+            }},
+           {1, 32, 1,
+            [](DlOpReceiver& r) {
+              r.drawText(DlTextImpeller::Make(GetTestTextFrame(2)), 10, 10);
+            }},
+#endif
        }},
       {"DrawShadow",
        {
-           {1, 48, 1,
+           {1, 56, 1,
             [](DlOpReceiver& r) {
               r.drawShadow(kTestPath1, DlColor(SK_ColorGREEN), 1.0, false, 1.0);
             }},
-           {1, 48, 1,
+           {1, 56, 1,
             [](DlOpReceiver& r) {
               r.drawShadow(kTestPath2, DlColor(SK_ColorGREEN), 1.0, false, 1.0);
             }},
-           {1, 48, 1,
+           {1, 56, 1,
             [](DlOpReceiver& r) {
               r.drawShadow(kTestPath1, DlColor(SK_ColorBLUE), 1.0, false, 1.0);
             }},
-           {1, 48, 1,
+           {1, 56, 1,
             [](DlOpReceiver& r) {
               r.drawShadow(kTestPath1, DlColor(SK_ColorGREEN), 2.0, false, 1.0);
             }},
-           {1, 48, 1,
+           {1, 56, 1,
             [](DlOpReceiver& r) {
               r.drawShadow(kTestPath1, DlColor(SK_ColorGREEN), 1.0, true, 1.0);
             }},
-           {1, 48, 1,
+           {1, 56, 1,
             [](DlOpReceiver& r) {
               r.drawShadow(kTestPath1, DlColor(SK_ColorGREEN), 1.0, false, 2.5);
             }},
@@ -1203,6 +1194,20 @@ sk_sp<SkTextBlob> GetTestTextBlob(int index) {
   text_blobs.insert(std::make_pair(index, blob));
   return blob;
 }
+
+#if IMPELLER_SUPPORTS_RENDERING
+std::shared_ptr<impeller::TextFrame> GetTestTextFrame(int index) {
+  static std::map<int, std::shared_ptr<impeller::TextFrame>> text_frames;
+  auto it = text_frames.find(index);
+  if (it != text_frames.end()) {
+    return it->second;
+  }
+  auto blob = GetTestTextBlob(index);
+  auto frame = impeller::MakeTextFrameFromTextBlobSkia(blob);
+  text_frames.insert(std::make_pair(index, frame));
+  return frame;
+}
+#endif
 
 sk_sp<SkTextBlob> GetTestTextBlob(const std::string& text, DlScalar font_size) {
   return SkTextBlob::MakeFromText(text.c_str(), text.size(),

@@ -1,3 +1,7 @@
+// Copyright 2014 The Flutter Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
 package com.flutter.gradle
 
 import kotlin.test.Test
@@ -5,7 +9,7 @@ import kotlin.test.assertEquals
 
 class VersionUtilsTest {
     @Test
-    fun handles_documenation_examples() {
+    fun handles_documentation_examples() {
         versionComparison("2.8.0", "2.8", expected = "2.8.0")
         versionComparison("8.7-rc-2", "8.7.2", expected = "8.7.2")
     }

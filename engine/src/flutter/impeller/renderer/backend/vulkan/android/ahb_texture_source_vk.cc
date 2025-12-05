@@ -56,11 +56,7 @@ vk::UniqueImage CreateVKImageWrapperForAndroidHarwareBuffer(
   }
   if (ahb_desc.usage & AHARDWAREBUFFER_USAGE_GPU_FRAMEBUFFER) {
     image_usage_flags |= vk::ImageUsageFlagBits::eColorAttachment;
-  }
-  if (ahb_desc.usage & AHARDWAREBUFFER_USAGE_COMPOSER_OVERLAY) {
-    image_usage_flags |= vk::ImageUsageFlagBits::eColorAttachment;
     image_usage_flags |= vk::ImageUsageFlagBits::eInputAttachment;
-    image_usage_flags |= vk::ImageUsageFlagBits::eTransferDst;
   }
 
   vk::ImageCreateFlags image_create_flags;
@@ -267,6 +263,7 @@ PixelFormat ToPixelFormat(AHardwareBuffer_Format format) {
     case AHARDWAREBUFFER_FORMAT_R8G8B8_UNORM:
     case AHARDWAREBUFFER_FORMAT_D16_UNORM:
     case AHARDWAREBUFFER_FORMAT_R8G8B8X8_UNORM:
+    case AHARDWAREBUFFER_FORMAT_YCbCr_P210:
       // Not understood by the rest of Impeller. Use a placeholder but create
       // the native image and image views using the right external format.
       break;
@@ -302,7 +299,7 @@ TextureDescriptor ToTextureDescriptor(const AHardwareBuffer_Desc& ahb_desc) {
   desc.mip_count = (ahb_desc.usage & AHARDWAREBUFFER_USAGE_GPU_MIPMAP_COMPLETE)
                        ? ahb_size.MipCount()
                        : 1u;
-  if (ahb_desc.usage & AHARDWAREBUFFER_USAGE_COMPOSER_OVERLAY) {
+  if (ahb_desc.usage & AHARDWAREBUFFER_USAGE_GPU_FRAMEBUFFER) {
     desc.usage = TextureUsage::kRenderTarget;
   }
   return desc;

@@ -38,6 +38,12 @@
   "searchWebButtonLabel": "Szukaj w internecie",
   "shareButtonLabel": "Udostępnij…",
   "clearButtonLabel": "Wyczyść",
-  "cancelButtonLabel": "Cancel",
-  "backButtonLabel": "Back"
+  "cancelButtonLabel": "Anuluj",
+  "backButtonLabel": "Wstecz",
+  "expansionTileExpandedHint": "kliknij dwukrotnie, aby zwinąć",
+  "expansionTileCollapsedHint": "kliknij dwukrotnie, aby rozwinąć",
+  "expansionTileExpandedTapHint": "Zwiń",
+  "expansionTileCollapsedTapHint": "Rozwiń, aby wyświetlić więcej informacji",
+  "expandedHint": "Zwinięto",
+  "collapsedHint": "Rozwinięto"
 }

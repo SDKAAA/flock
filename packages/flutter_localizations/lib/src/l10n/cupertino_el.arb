@@ -28,6 +28,12 @@
   "lookUpButtonLabel": "Look Up",
   "searchWebButtonLabel": "Αναζήτηση στον ιστό",
   "shareButtonLabel": "Κοινοποίηση…",
-  "cancelButtonLabel": "Cancel",
-  "backButtonLabel": "Back"
+  "cancelButtonLabel": "Ακύρωση",
+  "backButtonLabel": "Πίσω",
+  "expansionTileExpandedHint": "πατήστε δύο φορές για σύμπτυξη",
+  "expansionTileCollapsedHint": "πατήστε δύο φορές για ανάπτυξη",
+  "expansionTileExpandedTapHint": "Σύμπτυξη",
+  "expansionTileCollapsedTapHint": "Ανάπτυξη για περισσότερες λεπτομέρειες",
+  "expandedHint": "Συμπτύχθηκε",
+  "collapsedHint": "Αναπτύχθηκε"
 }

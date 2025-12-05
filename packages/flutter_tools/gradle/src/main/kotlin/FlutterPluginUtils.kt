@@ -1,11 +1,19 @@
+// Copyright 2014 The Flutter Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
 package com.flutter.gradle
 
+import com.android.build.api.artifact.SingleArtifact
+import com.android.build.api.variant.AndroidComponentsExtension
 import com.android.build.gradle.AbstractAppExtension
 import com.android.build.gradle.BaseExtension
+import com.android.build.gradle.tasks.ProcessAndroidResources
 import com.android.builder.model.BuildType
+import com.flutter.gradle.plugins.PluginHandler
+import com.flutter.gradle.tasks.DeepLinkJsonFromManifestTask
 import groovy.lang.Closure
 import org.gradle.api.GradleException
-import org.gradle.api.JavaVersion
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.UnknownTaskException
@@ -25,10 +33,10 @@ object FlutterPluginUtils {
     internal const val PROP_SPLIT_PER_ABI = "split-per-abi"
     internal const val PROP_LOCAL_ENGINE_REPO = "local-engine-repo"
     internal const val PROP_IS_VERBOSE = "verbose"
-    internal const val PROP_IS_FAST_START = "fast-start"
     internal const val PROP_TARGET = "target"
     internal const val PROP_LOCAL_ENGINE_BUILD_MODE = "local-engine-build-mode"
     internal const val PROP_TARGET_PLATFORM = "target-platform"
+    internal const val PROP_DISABLE_ABI_FILTERING = "disable-abi-filtering"
 
     // ----------------- Methods for string manipulation and comparison. -----------------
 
@@ -47,6 +55,9 @@ object FlutterPluginUtils {
     @JvmStatic
     @Suppress("DEPRECATION")
     internal fun capitalize(string: String): String = string.capitalize()
+
+    @OptIn(ExperimentalStdlibApi::class)
+    internal fun lowercase(string: String): String = string.lowercase()
 
     // compareTo implementation of version strings in the format of ints and periods
     // Will not crash on RC candidate strings but considers all RC candidates the same version.
@@ -127,19 +138,6 @@ object FlutterPluginUtils {
     // TODO(54566): Can remove this function and its call sites once resolved.
 
     /**
-     * Returns `true` if the given project is a plugin project having an `android` directory
-     * containing a `build.gradle` or `build.gradle.kts` file.
-     */
-    @JvmStatic
-    @JvmName("pluginSupportsAndroidPlatform")
-    internal fun pluginSupportsAndroidPlatform(project: Project): Boolean {
-        val buildGradle = File(File(project.projectDir.parentFile, "android"), "build.gradle")
-        val buildGradleKts =
-            File(File(project.projectDir.parentFile, "android"), "build.gradle.kts")
-        return buildGradle.exists() || buildGradleKts.exists()
-    }
-
-    /**
      * Returns the Gradle settings script for the build. When both Groovy and
      * Kotlin variants exist, then Groovy (settings.gradle) is preferred over
      * Kotlin (settings.gradle.kts). This is the same behavior as Gradle 8.5.
@@ -206,15 +204,9 @@ object FlutterPluginUtils {
     @JvmName("isProjectVerbose")
     internal fun isProjectVerbose(project: Project): Boolean = project.findProperty(PROP_IS_VERBOSE)?.toString()?.toBoolean() ?: false
 
-    /** Whether to build the debug app in "fast-start" mode. */
     @JvmStatic
-    @JvmName("isProjectFastStart")
-    internal fun isProjectFastStart(project: Project): Boolean =
-        project
-            .findProperty(
-                PROP_IS_FAST_START
-            )?.toString()
-            ?.toBoolean() ?: false
+    @JvmName("shouldProjectDisableAbiFiltering")
+    internal fun shouldProjectDisableAbiFiltering(project: Project): Boolean = project.hasProperty(PROP_DISABLE_ABI_FILTERING)
 
     /**
      * TODO: Remove this AGP hack. https://github.com/flutter/flutter/issues/109560
@@ -393,11 +385,15 @@ object FlutterPluginUtils {
         return project.property(PROP_LOCAL_ENGINE_BUILD_MODE) == flutterBuildMode
     }
 
-    private fun getAndroidExtension(project: Project): BaseExtension {
+    internal fun getAndroidExtension(project: Project): BaseExtension {
         // Common supertype of the android extension types.
         // But maybe this should be https://developer.android.com/reference/tools/gradle-api/8.7/com/android/build/api/dsl/TestedExtension.
         return project.extensions.findByType(BaseExtension::class.java)!!
     }
+
+    // Avoid new usages this class is not part of the public AGP DSL.
+    private fun getAndroidAppExtensionOrNull(project: Project): AbstractAppExtension? =
+        project.extensions.findByType(AbstractAppExtension::class.java)
 
     /**
      * Expected format of getAndroidExtension(project).compileSdkVersion is a string of the form
@@ -510,7 +506,12 @@ object FlutterPluginUtils {
             // TODO(gmackall): This should be updated to reflect newer templates.
             // The default for AGP 4.1.0 used in old templates.
             val ndkVersionIfUnspecified = "21.1.6352462"
-            val projectNdkVersion =
+
+            // TODO(gmackall): We can remove this elvis when our minimum AGP is >= 8.2.
+            //  This value (ndkVersion) is nullable on AGP versions below that.
+            //  See https://developer.android.com/reference/tools/gradle-api/8.1/com/android/build/api/dsl/CommonExtension#ndkVersion().
+            @Suppress("USELESS_ELVIS")
+            val projectNdkVersion: String =
                 getAndroidExtension(project).ndkVersion ?: ndkVersionIfUnspecified
             var maxPluginNdkVersion = projectNdkVersion
             var numProcessedPlugins = pluginList.size
@@ -536,6 +537,11 @@ object FlutterPluginUtils {
                             )
                         )
                     }
+
+                    // TODO(gmackall): We can remove this elvis when our minimum AGP is >= 8.2.
+                    //  This value (ndkVersion) is nullable on AGP versions below that.
+                    //  See https://developer.android.com/reference/tools/gradle-api/8.1/com/android/build/api/dsl/CommonExtension#ndkVersion().
+                    @Suppress("USELESS_ELVIS")
                     val pluginNdkVersion: String =
                         getAndroidExtension(pluginProject).ndkVersion ?: ndkVersionIfUnspecified
                     maxPluginNdkVersion =
@@ -544,7 +550,12 @@ object FlutterPluginUtils {
                             maxPluginNdkVersion
                         )
                     if (pluginNdkVersion != projectNdkVersion) {
-                        pluginsWithDifferentNdkVersion.add(PluginVersionPair(pluginName, pluginNdkVersion))
+                        pluginsWithDifferentNdkVersion.add(
+                            PluginVersionPair(
+                                pluginName,
+                                pluginNdkVersion
+                            )
+                        )
                     }
 
                     numProcessedPlugins--
@@ -593,14 +604,36 @@ object FlutterPluginUtils {
 
         // Otherwise, point to an empty CMakeLists.txt, and ignore associated warnings.
         gradleProjectAndroidExtension.externalNativeBuild.cmake.path(
-            "$flutterSdkRootPath/packages/flutter_tools/gradle/src/main/groovy/CMakeLists.txt"
+            "$flutterSdkRootPath/packages/flutter_tools/gradle/src/main/scripts/CMakeLists.txt"
+        )
+
+        // AGP defaults to outputting build artifacts in `android/app/.cxx`. This directory is a
+        // build artifact, so we move it from that directory to within Flutter's build directory
+        // to avoid polluting source directories with build artifacts.
+        //
+        // AGP explicitly recommends not setting the buildStagingDirectory to be within a build
+        // directory in
+        // https://developer.android.com/reference/tools/gradle-api/8.3/null/com/android/build/api/dsl/Cmake#buildStagingDirectory(kotlin.Any),
+        // but as we are not actually building anything (and are instead only tricking AGP into
+        // downloading the NDK), it is acceptable for the buildStagingDirectory to be removed
+        // and rebuilt when running clean builds.
+        gradleProjectAndroidExtension.externalNativeBuild.cmake.buildStagingDirectory(
+            gradleProject.layout.buildDirectory
+                .dir("../.cxx")
+                .get()
+                .asFile.path
         )
 
         // CMake will print warnings when you try to build an empty project.
         // These arguments silence the warnings - our project is intentionally
         // empty.
-        gradleProjectAndroidExtension.defaultConfig.externalNativeBuild.cmake
-            .arguments("-Wno-dev", "--no-warn-unused-cli")
+        gradleProjectAndroidExtension.buildTypes.forEach { buildType ->
+            buildType.externalNativeBuild.cmake.arguments(
+                "-Wno-dev",
+                "--no-warn-unused-cli",
+                "-DCMAKE_BUILD_TYPE=${buildType.name}"
+            )
+        }
     }
 
     @JvmStatic
@@ -621,14 +654,14 @@ object FlutterPluginUtils {
     internal fun addFlutterDependencies(
         project: Project,
         buildType: BuildType,
-        pluginList: List<Map<String?, Any?>>,
+        pluginHandler: PluginHandler,
         engineVersion: String
     ) {
         val flutterBuildMode: String = buildModeFor(buildType)
         if (!supportsBuildMode(project, flutterBuildMode)) {
             project.logger.quiet(
                 "Project does not support Flutter build mode: $flutterBuildMode, " +
-                    "skipping adding flutter dependencies"
+                    "skipping adding Flutter dependencies"
             )
             return
         }
@@ -641,11 +674,9 @@ object FlutterPluginUtils {
         // embedding.
         val pluginsThatIncludeFlutterEmbeddingAsTransitiveDependency: List<Map<String?, Any?>> =
             if (flutterBuildMode == "release") {
-                getPluginListWithoutDevDependencies(
-                    pluginList
-                )
+                pluginHandler.getPluginListWithoutDevDependencies()
             } else {
-                pluginList
+                pluginHandler.getPluginList()
             }
 
         if (!isFlutterAppProject(project) || pluginsThatIncludeFlutterEmbeddingAsTransitiveDependency.isEmpty()) {
@@ -667,146 +698,9 @@ object FlutterPluginUtils {
         }
     }
 
-    /**
-     * Gets the list of plugins (as map) that support the Android platform and are dependencies of the
-     * Android project excluding dev dependencies.
-     *
-     * The map value contains either the plugins `name` (String),
-     * its `path` (String), or its `dependencies` (List<String>).
-     * See [NativePluginLoader#getPlugins] in packages/flutter_tools/gradle/src/main/groovy/native_plugin_loader.groovy
-     */
-    private fun getPluginListWithoutDevDependencies(pluginList: List<Map<String?, Any?>>): List<Map<String?, Any?>> =
-        pluginList.filter { pluginObject -> pluginObject["dev_dependency"] == false }
-
-    /**
-     * Add the dependencies on other plugin projects to the plugin project.
-     * A plugin A can depend on plugin B. As a result, this dependency must be surfaced by
-     * making the Gradle plugin project A depend on the Gradle plugin project B.
-     */
-    @JvmStatic
-    @JvmName("configurePluginDependencies")
-    internal fun configurePluginDependencies(
-        project: Project,
-        pluginObject: Map<String?, Any?>
-    ) {
-        val pluginName: String =
-            requireNotNull(pluginObject["name"] as? String) {
-                "Missing valid \"name\" property for plugin object: $pluginObject"
-            }
-        val pluginProject: Project = project.rootProject.findProject(":$pluginName") ?: return
-
-        getAndroidExtension(project).buildTypes.forEach { buildType ->
-            val flutterBuildMode: String = buildModeFor(buildType)
-            if (flutterBuildMode == "release" && (pluginObject["dev_dependency"] as? Boolean == true)) {
-                // This plugin is a dev dependency will not be included in the
-                // release build, so no need to add its dependencies.
-                return@forEach
-            }
-            val dependencies = requireNotNull(pluginObject["dependencies"] as? List<*>)
-            dependencies.forEach innerForEach@{ pluginDependencyName ->
-                check(pluginDependencyName is String)
-                if (pluginDependencyName.isEmpty()) {
-                    return@innerForEach
-                }
-
-                val dependencyProject =
-                    project.rootProject.findProject(":$pluginDependencyName") ?: return@innerForEach
-                pluginProject.afterEvaluate {
-                    pluginProject.dependencies.add("implementation", dependencyProject)
-                }
-            }
-        }
-    }
-
-    /**
-     * Performs configuration related to the plugin's Gradle [Project], including
-     * 1. Adding the plugin itself as a dependency to the main project.
-     * 2. Adding the main project's build types to the plugin's build types.
-     * 3. Adding a dependency on the Flutter embedding to the plugin.
-     *
-     * Should only be called on plugins that support the Android platform.
-     */
-    @JvmStatic
-    @JvmName("configurePluginProject")
-    internal fun configurePluginProject(
-        project: Project,
-        pluginObject: Map<String?, Any?>,
-        engineVersion: String
-    ) {
-        // TODO(gmackall): should guard this with a pluginObject.contains().
-        val pluginName =
-            requireNotNull(pluginObject["name"] as? String) { "Plugin name must be a string for plugin object: $pluginObject" }
-        val pluginProject: Project = project.rootProject.findProject(":$pluginName") ?: return
-
-        // Apply the "flutter" Gradle extension to plugins so that they can use it's vended
-        // compile/target/min sdk values.
-        pluginProject.extensions.create("flutter", FlutterExtension::class.java)
-
-        // Add plugin dependency to the app project. We only want to add dependency
-        // for dev dependencies in non-release builds.
-        project.afterEvaluate {
-            getAndroidExtension(project).buildTypes.forEach { buildType ->
-                if (!(pluginObject["dev_dependency"] as Boolean) || buildType.name != "release") {
-                    project.dependencies.add("${buildType.name}Api", pluginProject)
-                }
-            }
-        }
-
-        // Wait until the Android plugin loaded.
-        pluginProject.afterEvaluate {
-            // Checks if there is a mismatch between the plugin compileSdkVersion and the project compileSdkVersion.
-            val projectCompileSdkVersion: String = getCompileSdkFromProject(project)
-            val pluginCompileSdkVersion: String = getCompileSdkFromProject(pluginProject)
-            // TODO(gmackall): This is doing a string comparison, which is odd and also can be wrong
-            //                 when comparing preview versions (against non preview, and also in the
-            //                 case of alphabet reset which happened with "Baklava".
-            if (pluginCompileSdkVersion > projectCompileSdkVersion) {
-                project.logger.quiet("Warning: The plugin $pluginName requires Android SDK version $pluginCompileSdkVersion or higher.")
-                project.logger.quiet(
-                    "For more information about build configuration, see ${FlutterPluginConstants.WEBSITE_DEPLOYMENT_ANDROID_BUILD_CONFIG}."
-                )
-            }
-
-            getAndroidExtension(project).buildTypes.forEach { buildType ->
-                addEmbeddingDependencyToPlugin(project, pluginProject, buildType, engineVersion)
-            }
-        }
-    }
-
-    private fun addEmbeddingDependencyToPlugin(
-        project: Project,
-        pluginProject: Project,
-        buildType: BuildType,
-        engineVersion: String
-    ) {
-        val flutterBuildMode: String = buildModeFor(buildType)
-        // TODO(gmackall): this should be safe to remove, as the minimum required AGP is well above
-        //                 3.5. We should try to remove it.
-        // In AGP 3.5, the embedding must be added as an API implementation,
-        // so java8 features are desugared against the runtime classpath.
-        // For more, see https://github.com/flutter/flutter/issues/40126
-        if (!supportsBuildMode(pluginProject, flutterBuildMode)) {
-            return
-        }
-        if (!pluginProject.hasProperty("android")) {
-            return
-        }
-
-        // Copy build types from the app to the plugin.
-        // This allows to build apps with plugins and custom build types or flavors.
-        getAndroidExtension(pluginProject).buildTypes.addAll(getAndroidExtension(project).buildTypes)
-
-        // The embedding is API dependency of the plugin, so the AGP is able to desugar
-        // default method implementations when the interface is implemented by a plugin.
-        //
-        // See https://issuetracker.google.com/139821726, and
-        // https://github.com/flutter/flutter/issues/72185 for more details.
-        addApiDependencies(pluginProject, buildType.name, "io.flutter:flutter_embedding_$flutterBuildMode:$engineVersion")
-    }
-
     // ------------------ Task adders (a subset of the above category)
 
-    // Add a task that can be called on flutter projects that prints the Java version used in Gradle.
+    // Add a task that can be called on Flutter projects that prints the Java version used in Gradle.
     //
     // Format of the output of this task can be used in debugging what version of Java Gradle is using.
     // Not recommended for use in time sensitive commands like `flutter run` or `flutter build` as
@@ -818,7 +712,25 @@ object FlutterPluginUtils {
             description = "Print the current java version used by gradle. see: " +
                 "https://docs.gradle.org/current/javadoc/org/gradle/api/JavaVersion.html"
             doLast {
-                println(JavaVersion.current())
+                println(VersionFetcher.getJavaVersion())
+            }
+        }
+    }
+
+    // Add a task that can be called on Flutter projects that prints the KGP version used in
+    // the project.
+    //
+    // Format of the output of this task can be used in debugging what version of KGP a
+    // project is using.
+    // Not recommended for use in time sensitive commands like `flutter run` or `flutter build` as
+    // Gradle tasks are slower than we want. Particularly in light of https://github.com/flutter/flutter/issues/119196.
+    @JvmStatic
+    @JvmName("addTaskForKGPVersion")
+    internal fun addTaskForKGPVersion(project: Project) {
+        project.tasks.register("kgpVersion") {
+            description = "Print the current kgp version used by the project."
+            doLast {
+                println("KGP Version: " + VersionFetcher.getKGPVersion(project).toString())
             }
         }
     }
@@ -847,6 +759,59 @@ object FlutterPluginUtils {
                     println("BuildVariant: ${variant.name}")
                 }
             }
+        }
+    }
+
+    // TODO(gmackall): Migrate to AGPs variant api.
+    //    https://github.com/flutter/flutter/issues/166550
+    @Suppress("DEPRECATION")
+    private fun findProcessResources(baseVariantOutput: com.android.build.gradle.api.BaseVariantOutput): ProcessAndroidResources =
+        baseVariantOutput.processResourcesProvider?.get() ?: baseVariantOutput.processResources
+
+    /**
+     * Adds required tasks for the AppLinkSettings feature.
+     *
+     * Should only be called if the build target is an app, as opposed to an aar/module.
+     *
+     * Add a task that can be called on Flutter projects that outputs app link related project
+     * settings into a json file.
+     * See https://developer.android.com/training/app-links/ for more information about app link.
+     * The json will be saved in path stored in "outputPath" parameter or in the projects build
+     * directory with the file deeplink.json if not specified.
+     *
+     * See DeepLinkJsonFromManifestTask for the structure of the json.
+     *
+     * The output file is parsed and used by devtool.
+     */
+    @JvmStatic
+    @JvmName("addTasksForOutputsAppLinkSettings")
+    internal fun addTasksForOutputsAppLinkSettings(project: Project) {
+        // Integration test for AppLinkSettings task defined in
+        // flutter/flutter/packages/flutter_tools/test/integration.shard/android_gradle_outputs_app_link_settings_test.dart
+        val androidComponents = project.extensions.getByType(AndroidComponentsExtension::class.java)
+        androidComponents.onVariants { variant ->
+            val manifestUpdater =
+                project.tasks.register("output${capitalize(variant.name)}AppLinkSettings", DeepLinkJsonFromManifestTask::class.java) {
+                    namespace.set(variant.namespace)
+                    // Flutter should always use project.layout.buildDirectory.file("deeplink.json")
+                    // instead of relying on passing in a path.
+                    if (project.hasProperty("outputPath")) {
+                        deepLinkJson.set(
+                            File(project.property("outputPath").toString())
+                        )
+                    } else {
+                        deepLinkJson.set(project.layout.buildDirectory.file("deeplink.json"))
+                    }
+                }
+            // This task does not modify the manifest despite using an api
+            // designed for modification. The task is responsible for an exact copy of the input
+            // manifest being used for the output manifest.
+            variant.artifacts
+                .use(manifestUpdater)
+                .wiredWithFiles(
+                    DeepLinkJsonFromManifestTask::manifestFile,
+                    DeepLinkJsonFromManifestTask::updatedManifest
+                ).toTransform(SingleArtifact.MERGED_MANIFEST) // (3) Indicate the artifact and operation type.
         }
     }
 }

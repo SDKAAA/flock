@@ -16,8 +16,8 @@ if (localPropertiesFile.exists()) {
 }
 
 android {
-    namespace "com.yourcompany.flavors"
-    compileSdk flutter.compileSdkVersion
+    namespace = "com.yourcompany.flavors"
+    compileSdk = flutter.compileSdkVersion
 
     // Flutter's CI installs the NDK at a non-standard path.
     // This non-standard structure is initially created by
@@ -29,8 +29,8 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
 
     defaultConfig {
@@ -43,7 +43,7 @@ android {
 
     buildTypes {
         release {
-            signingConfig signingConfigs.debug
+            signingConfig = signingConfigs.debug
         }
     }
 
@@ -54,10 +54,10 @@ android {
         paid {}
     }
     buildFeatures {
-        buildConfig true
+        buildConfig = true
     }
 }
 
 flutter {
-    source '../..'
+    source = '../..'
 }

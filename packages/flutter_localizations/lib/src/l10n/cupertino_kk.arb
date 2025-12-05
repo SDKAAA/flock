@@ -28,6 +28,12 @@
   "searchWebButtonLabel": "Интернеттен іздеу",
   "shareButtonLabel": "Бөлісу…",
   "clearButtonLabel": "Өшіру",
-  "cancelButtonLabel": "Cancel",
-  "backButtonLabel": "Back"
+  "cancelButtonLabel": "Бас тарту",
+  "backButtonLabel": "Артқа",
+  "expansionTileExpandedHint": "жию үшін екі рет түртіңіз",
+  "expansionTileCollapsedHint": "жаю үшін екі рет түртіңіз",
+  "expansionTileExpandedTapHint": "Жию",
+  "expansionTileCollapsedTapHint": "Толық мәлімет алу үшін жайыңыз.",
+  "expandedHint": "Жиылды",
+  "collapsedHint": "Жайылды"
 }

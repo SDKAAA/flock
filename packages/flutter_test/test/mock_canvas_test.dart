@@ -35,7 +35,7 @@ class MethodAndArguments {
     if (!(other is MethodAndArguments && other.method == method)) {
       return false;
     }
-    for (int i = 0; i < arguments.length; i++) {
+    for (var i = 0; i < arguments.length; i++) {
       if (arguments[i] != other.arguments[i]) {
         return false;
       }
@@ -60,7 +60,7 @@ void main() {
         ),
       );
 
-      final List<MethodAndArguments> methodsAndArguments = <MethodAndArguments>[];
+      final methodsAndArguments = <MethodAndArguments>[];
 
       expect(
         tester.renderObject(find.byType(CustomPaint)),
@@ -85,7 +85,7 @@ void main() {
         ),
       );
 
-      final List<MethodAndArguments> methodsAndArguments = <MethodAndArguments>[];
+      final methodsAndArguments = <MethodAndArguments>[];
 
       expect(
         tester.renderObject(find.byType(CustomPaint)),
@@ -112,7 +112,7 @@ void main() {
         ),
       );
 
-      final List<MethodAndArguments> methodsAndArguments = <MethodAndArguments>[];
+      final methodsAndArguments = <MethodAndArguments>[];
 
       expect(
         tester.renderObject(find.byType(CustomPaint)),
@@ -147,7 +147,7 @@ void main() {
         ),
       );
 
-      final List<MethodAndArguments> methodsAndArguments = <MethodAndArguments>[];
+      final methodsAndArguments = <MethodAndArguments>[];
 
       expect(
         tester.renderObject(find.byType(CustomPaint)),
@@ -172,7 +172,7 @@ void main() {
         ),
       );
 
-      final List<MethodAndArguments> methodsAndArguments = <MethodAndArguments>[];
+      final methodsAndArguments = <MethodAndArguments>[];
 
       expect(
         tester.renderObject(find.byType(CustomPaint)),
@@ -200,7 +200,7 @@ void main() {
         ),
       );
 
-      final List<MethodAndArguments> methodsAndArguments = <MethodAndArguments>[];
+      final methodsAndArguments = <MethodAndArguments>[];
 
       expect(
         tester.renderObject(find.byType(CustomPaint)),
@@ -227,8 +227,8 @@ void main() {
     final Rect rect = Offset.zero & const Size.square(50);
     const double startAngle = math.pi / 4;
     const double sweepAngle = math.pi / 2;
-    const bool useCenter = false;
-    final Paint paint = Paint()..color = Colors.blue;
+    const useCenter = false;
+    final paint = Paint()..color = Colors.blue;
 
     Future<void> pumpPainter(WidgetTester tester) async {
       await tester.pumpWidget(
@@ -351,6 +351,56 @@ void main() {
       );
     });
   });
+
+  group('rsuperellipse', () {
+    final rsuperellipse = RSuperellipse.fromRectAndRadius(
+      Offset.zero & const Size.square(50),
+      const Radius.circular(5),
+    );
+    final paint = Paint()..color = Colors.blue;
+
+    Future<void> pumpPainter(WidgetTester tester) async {
+      await tester.pumpWidget(
+        Center(
+          child: CustomPaint(
+            painter: _RSuperellipsePainter(rsuperellipse: rsuperellipse, paint: paint),
+            size: rsuperellipse.outerRect.size,
+          ),
+        ),
+      );
+    }
+
+    testWidgets('matches when rsuperellipse is correct', (WidgetTester tester) async {
+      await pumpPainter(tester);
+      expect(
+        tester.renderObject(find.byType(CustomPaint)),
+        paints..rsuperellipse(rsuperellipse: rsuperellipse),
+      );
+    });
+
+    testWidgets('does not match when rsuperellipse is incorrect', (WidgetTester tester) async {
+      await pumpPainter(tester);
+
+      expect(
+        () => expect(
+          tester.renderObject(find.byType(CustomPaint)),
+          paints..rsuperellipse(rsuperellipse: rsuperellipse.deflate(10)),
+        ),
+        throwsA(
+          isA<TestFailure>().having(
+            (TestFailure failure) => failure.message,
+            'message',
+            contains(
+              'It called drawRSuperellipse with a rounded superellipse, '
+              'RSuperellipse.fromLTRBR(0.0, 0.0, 50.0, 50.0, 5.0), which was '
+              'not exactly the expected rounded superellipse '
+              '(RSuperellipse.fromLTRBR(10.0, 10.0, 40.0, 40.0, 0.0))',
+            ),
+          ),
+        ),
+      );
+    });
+  });
 }
 
 class _ArcPainter extends CustomPainter {
@@ -372,6 +422,24 @@ class _ArcPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     canvas.drawArc(Offset.zero & size, startAngle, sweepAngle, useCenter, _paint);
+  }
+
+  @override
+  bool shouldRepaint(MyPainter oldDelegate) {
+    return true;
+  }
+}
+
+class _RSuperellipsePainter extends CustomPainter {
+  const _RSuperellipsePainter({required this.rsuperellipse, required Paint paint}) : _paint = paint;
+
+  final RSuperellipse rsuperellipse;
+
+  final Paint _paint;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawRSuperellipse(rsuperellipse, _paint);
   }
 
   @override

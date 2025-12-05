@@ -35,6 +35,12 @@ namespace flutter::testing {
     const sk_sp<const DisplayList>& b) {
   return DisplayListsNE_Verbose(a.get(), b.get());
 }
+class DlVerbosePath {
+ public:
+  explicit DlVerbosePath(const DlPath& path) : path(path) {}
+
+  const DlPath& path;
+};
 
 }  // namespace flutter::testing
 
@@ -76,6 +82,10 @@ extern std::ostream& operator<<(std::ostream& os,
 extern std::ostream& operator<<(std::ostream& os,
                                 const flutter::DisplayListOpCategory& category);
 extern std::ostream& operator<<(std::ostream& os, const flutter::DlPath& path);
+extern std::ostream& operator<<(std::ostream& os,
+                                const flutter::testing::DlVerbosePath& path);
+extern std::ostream& operator<<(std::ostream& os,
+                                const flutter::DlPathFillType& type);
 extern std::ostream& operator<<(std::ostream& os,
                                 const flutter::DlImageFilter& type);
 extern std::ostream& operator<<(std::ostream& os,
@@ -188,12 +198,9 @@ class DisplayListStreamDispatcher final : public DlOpReceiver {
                  bool render_with_attributes) override;
   void drawDisplayList(const sk_sp<DisplayList> display_list,
                        DlScalar opacity) override;
-  void drawTextBlob(const sk_sp<SkTextBlob> blob,
-                    DlScalar x,
-                    DlScalar y) override;
-  void drawTextFrame(const std::shared_ptr<impeller::TextFrame>& text_frame,
-                     DlScalar x,
-                     DlScalar y) override;
+  void drawText(const std::shared_ptr<DlText>& text,
+                DlScalar x,
+                DlScalar y) override;
   void drawShadow(const DlPath& path,
                   const DlColor color,
                   const DlScalar elevation,
@@ -204,6 +211,7 @@ class DisplayListStreamDispatcher final : public DlOpReceiver {
   void out(const DlColorFilter* filter);
   void out(const DlImageFilter& filter);
   void out(const DlImageFilter* filter);
+  void out(const DlVerbosePath& path);
 
  private:
   std::ostream& os_;
@@ -219,6 +227,30 @@ class DisplayListStreamDispatcher final : public DlOpReceiver {
   std::ostream& out_array(std::string name, int count, const T array[]);
 
   std::ostream& startl();
+
+  class DlPathStreamer : public DlPathReceiver {
+   public:
+    ~DlPathStreamer();
+
+    explicit DlPathStreamer(DisplayListStreamDispatcher& dispatcher)
+        : dispatcher_(dispatcher) {}
+
+    void MoveTo(const DlPoint& p2, bool will_be_closed) override;
+    void LineTo(const DlPoint& p2) override;
+    void QuadTo(const DlPoint& cp, const DlPoint& p2) override;
+    bool ConicTo(const DlPoint& cp,
+                 const DlPoint& p2,
+                 DlScalar weight) override;
+    void CubicTo(const DlPoint& cp1,
+                 const DlPoint& cp2,
+                 const DlPoint& p2) override;
+    void Close() override;
+
+   private:
+    DisplayListStreamDispatcher& dispatcher_;
+    bool done_with_info_ = false;
+  };
+  friend class DlPathStreamer;
 };
 
 class DisplayListGeneralReceiver : public DlOpReceiver {
@@ -528,15 +560,10 @@ class DisplayListGeneralReceiver : public DlOpReceiver {
                        DlScalar opacity) override {
     RecordByType(DisplayListOpType::kDrawDisplayList);
   }
-  void drawTextBlob(const sk_sp<SkTextBlob> blob,
-                    DlScalar x,
-                    DlScalar y) override {
-    RecordByType(DisplayListOpType::kDrawTextBlob);
-  }
-  void drawTextFrame(const std::shared_ptr<impeller::TextFrame>& text_frame,
-                     DlScalar x,
-                     DlScalar y) override {
-    RecordByType(DisplayListOpType::kDrawTextFrame);
+  void drawText(const std::shared_ptr<DlText>& text,
+                DlScalar x,
+                DlScalar y) override {
+    RecordByType(DisplayListOpType::kDrawText);
   }
   void drawShadow(const DlPath& path,
                   const DlColor color,

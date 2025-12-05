@@ -59,7 +59,7 @@ performance implications. See [#49801][pr_49801] for an example.
 
 #### Linux Embedding
 
-> [!NOTE]  
+> [!NOTE]
 > The Linux embedding instead follows idiomatic GObject-based C style.
 
 Use of C++ in the [Linux embedding][] is discouraged in that embedding to avoid
@@ -186,7 +186,7 @@ Automatically formatted with `gn format`.
 [code_of_conduct]: https://github.com/flutter/flutter/blob/master/CODE_OF_CONDUCT.md
 [contrib_guide]: https://github.com/flutter/flutter/blob/master/CONTRIBUTING.md
 [engine_dev_setup]: docs/contributing/Setting-up-the-Engine-development-environment.md
-[flutter_style]: https://github.com/flutter/flutter/wiki/Style-guide-for-Flutter-repo
+[flutter_style]: https://github.com/flutter/flutter/blob/main/docs/contributing/Style-guide-for-Flutter-repo.md
 [objc_style]: https://google.github.io/styleguide/objcguide.html
 [java_style]: https://google.github.io/styleguide/javaguide.html
 [google_python_style]: https://google.github.io/styleguide/pyguide.html
@@ -215,14 +215,10 @@ in postsubmit.
 
 ### Skia Gold
 
-The Flutter engine uses [Skia Gold][skia_gold] for image comparison tests which fail if:
-
-- The image is different from an accepted baseline.
-- An image is not uploaded but is expected to be (see
-  [`dir_contents_diff`][dir_contents_diff]).
+The Flutter engine uses [Skia Gold][skia_gold] for image comparison tests which
+fail if the image is different from an accepted baseline image.
 
 [skia_gold]: https://flutter-engine-gold.skia.org/
-[dir_contents_diff]: ./tools/dir_contents_diff/
 
 Any untriaged failures will block presubmit and postsubmit tests.
 
@@ -274,8 +270,8 @@ $ ./run_tests.py --variant=host_debug_unopt_arm64 --type=engine
 | txt_unittests                            | engine(linux)       |                                                                 |
 | ui_unittests                             | engine              |                                                                 |
 
-[tree_hygiene_wiki]: https://github.com/flutter/flutter/wiki/Tree-hygiene#tests
-[testing_the_engine_wiki]: https://github.com/flutter/flutter/wiki/Testing-the-engine
+[tree_hygiene_wiki]: https://github.com/flutter/flutter/blob/main/docs/contributing/Tree-hygiene.md#tests
+[testing_the_engine_wiki]: https://github.com/flutter/flutter/blob/main/docs/engine/testing/Testing-the-engine.md
 
 ## Fuchsia Contributions from Googlers
 

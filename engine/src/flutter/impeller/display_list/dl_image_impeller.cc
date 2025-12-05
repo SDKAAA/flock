@@ -42,14 +42,22 @@ sk_sp<DlImageImpeller> DlImageImpeller::MakeFromYUVTextures(
       std::move(y_texture), std::move(uv_texture), yuv_color_space);
   impeller::Entity entity;
   entity.SetBlendMode(impeller::BlendMode::kSrc);
-  auto snapshot = yuv_to_rgb_filter_contents->RenderToSnapshot(
-      aiks_context->GetContentContext(),  // renderer
-      entity,                             // entity
-      std::nullopt,                       // coverage_limit
-      std::nullopt,                       // sampler_descriptor
-      true,                               // msaa_enabled
-      /*mip_count=*/1,
-      "MakeYUVToRGBFilter Snapshot");  // label
+
+  // Disable the render target cache so that this snapshot's texture will not
+  // be reused later by other operations.
+  const auto& renderer = aiks_context->GetContentContext();
+  renderer.GetRenderTargetCache()->DisableCache();
+  fml::ScopedCleanupClosure restore_cache(
+      [&] { renderer.GetRenderTargetCache()->EnableCache(); });
+
+  std::optional<Snapshot> snapshot =
+      yuv_to_rgb_filter_contents->RenderToSnapshot(
+          renderer, entity,
+          {.coverage_limit = std::nullopt,
+           .sampler_descriptor = std::nullopt,
+           .msaa_enabled = true,
+           .mip_count = 1,
+           .label = "MakeYUVToRGBFilter Snapshot"});
   if (!snapshot.has_value()) {
     return nullptr;
   }
@@ -101,12 +109,6 @@ bool DlImageImpeller::isTextureBacked() const {
 bool DlImageImpeller::isUIThreadSafe() const {
   // Impeller textures are always thread-safe
   return true;
-}
-
-// |DlImage|
-SkISize DlImageImpeller::dimensions() const {
-  const auto size = texture_ ? texture_->GetSize() : ISize{};
-  return SkISize::Make(size.width, size.height);
 }
 
 // |DlImage|

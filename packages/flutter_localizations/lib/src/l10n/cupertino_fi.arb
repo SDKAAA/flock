@@ -28,6 +28,12 @@
   "searchWebButtonLabel": "Hae verkosta",
   "shareButtonLabel": "Jaa…",
   "clearButtonLabel": "Tyhjennä",
-  "cancelButtonLabel": "Cancel",
-  "backButtonLabel": "Back"
+  "cancelButtonLabel": "Peru",
+  "backButtonLabel": "Takaisin",
+  "expansionTileExpandedHint": "tiivistä kaksoisnapauttamalla",
+  "expansionTileCollapsedHint": "laajenna kaksoisnapauttamalla",
+  "expansionTileExpandedTapHint": "Tiivistä",
+  "expansionTileCollapsedTapHint": "Katso lisätietoja laajentamalla",
+  "expandedHint": "Tiivistetty",
+  "collapsedHint": "Laajennettu"
 }

@@ -28,6 +28,12 @@
   "searchWebButtonLabel": "ვებში ძიება",
   "shareButtonLabel": "გაზიარება...",
   "clearButtonLabel": "გასუფთავება",
-  "cancelButtonLabel": "Cancel",
-  "backButtonLabel": "Back"
+  "cancelButtonLabel": "გაუქმება",
+  "backButtonLabel": "უკან",
+  "expansionTileExpandedHint": "ორმაგად შეეხეთ ჩასაკეცად",
+  "expansionTileCollapsedHint": "გასაფართოებლად ორჯერ შეეხეთ",
+  "expansionTileExpandedTapHint": "ჩაკეცვა",
+  "expansionTileCollapsedTapHint": "მეტი დეტალებისთვის გააფართოეთ",
+  "expandedHint": "ჩაკეცილია",
+  "collapsedHint": "გაფართოებულია"
 }
